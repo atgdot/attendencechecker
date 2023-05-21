@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Verification</title>
+    <style>
+        #videoElement {
+            width: 300px;
+            height: 225px;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <h1>Face Verification</h1>
+
+    <div>
+        <h2>Step 1: Capture Reference Photo</h2>
+        <p>Click the "Capture" button to capture a reference photo.</p>
+        <video id="videoElement" autoplay></video>
+        <button onclick="captureReferencePhoto()">Capture</button>
+    </div>
+
+    <div>
+        <h2>Step 2: Verify Face</h2>
+        <p>Click the "Verify" button to verify if the current face matches the reference photo.</p>
+        <canvas id="canvas" width="300" height="225"></canvas>
+        <button onclick="verifyFace()">Verify</button>
+    </div>
+
+    <script>
+        let referencePhotoData = null;
+
+        // Get access to webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function (stream) {
+                var videoElement = document.getElementById('videoElement');
+                videoElement.srcObject = stream;
+            })
+            .catch(function (error) {
+                console.error("Error accessing webcam: ", error);
+            });
+
+        // Function to capture reference photo
+        function captureReferencePhoto() {
+            var videoElement = document.getElementById('videoElement');
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+            // Convert the captured image to base64 data
+            referencePhotoData = canvas.toDataURL('image/png');
+            console.log('Reference photo captured:', referencePhotoData);
+        }
+
+        // Function to verify face
+        function verifyFace() {
+            if (referencePhotoData === null) {
+                alert('Please capture a reference photo first.');
+                return;
+            }
+
+            var videoElement = document.getElementById('videoElement');
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+            // Convert the captured image to base64 data
+            var currentPhotoData = canvas.toDataURL('image/png');
+            console.log('Current photo captured:', currentPhotoData);
+
+            // Send the reference photo and current photo data to the server for face verification
+            // You can use AJAX or fetch API to send the data to the server
+            // Example: Send referencePhotoData and currentPhotoData using AJAX
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/verify-face', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({ referencePhoto: referencePhotoData, currentPhoto: currentPhotoData }));
+
+            // Handle the response from the server
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    console.log('Face verification result:', response);
+                    // Perform any actions based on the face verification result
+                    if (response.match) {
+                        alert('Face matches the reference photo!');
+                    } else {
+                        alert('Face does not match the reference photo.');
+                    }
+                } else {
+                    console.error('Error verifying face:', xhr.status);
+                }
+            };
+        }
+    </script>
+</body>
+</html>
